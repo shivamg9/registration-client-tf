@@ -18,6 +18,7 @@ import java.util.Set;
 public class RegistrationConstants {
 
 
+	public static final String AUTH_TOKEN = "auth_token";
 
 	/**
 	 * private constructor

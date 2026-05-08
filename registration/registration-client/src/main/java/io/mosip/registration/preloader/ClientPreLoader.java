@@ -125,11 +125,11 @@ public class ClientPreLoader extends Preloader {
                 else
                     errorsFound = clientSetupValidator.isValidationFailed();
                 
-                clientSetupValidator.validateBioSDK();
-                if(clientSetupValidator.isBioSDK_updated()) {
-                	restartRequired = true;
-                    throw new RegBaseCheckedException("","Latest bio SDK downloaded, Kindly restart the client");
-                }
+//                clientSetupValidator.validateBioSDK();
+//                if(clientSetupValidator.isBioSDK_updated()) {
+//                	restartRequired = true;
+//                    throw new RegBaseCheckedException("","Latest bio SDK downloaded, Kindly restart the client");
+//                }
 
             } catch (RegBaseCheckedException e) {
                 errorsFound = true;

@@ -69,6 +69,10 @@ public class ClientSetupValidator {
             environment = properties.getProperty("environment");
             downloadBioSDKURL = properties.getProperty("mosip.download.bio.sdk.url");
             mosipHostname = properties.getProperty("mosip.hostname");
+            String upgradeServerURL = properties.getProperty("mosip.client.upgrade.server.url");
+            if (serverRegClientURL != null && serverRegClientURL.contains("%s")) {
+                serverRegClientURL = String.format(serverRegClientURL, upgradeServerURL);
+            }
             setLocalManifest();
             setLocalSDKManifest();
 
@@ -80,7 +84,7 @@ public class ClientSetupValidator {
                 return;
             }
 
-            Objects.requireNonNull(localManifest, manifestFile + " - Not found");
+//            Objects.requireNonNull(localManifest, manifestFile + " - Not found");
             //SoftwareUpdateUtil.deleteUnknownJars(localManifest);
 
         } catch (RegBaseCheckedException e) {
@@ -103,9 +107,21 @@ public class ClientSetupValidator {
             }
 
             setServerManifest();
+            if (serverManifest == null) {
+                logger.error("Server manifest is null. Skipping checksum validation.");
+                validation_failed = true;
+                return;
+            }
+
+            if (localManifest == null) {
+                logger.error("Local manifest is null. Creating a dummy manifest to allow download.");
+                localManifest = new Manifest();
+                localManifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "0.0.0");
+            }
+            String serverVersion = serverManifest.getMainAttributes().getValue(Attributes.Name.MANIFEST_VERSION);
 
             //When machine is offline / not reachable to server, serverManifest might be null
-            String serverVersion = serverManifest == null ? null : serverManifest.getMainAttributes().getValue(Attributes.Name.MANIFEST_VERSION);
+//            String serverVersion = serverManifest == null ? null : serverManifest.getMainAttributes().getValue(Attributes.Name.MANIFEST_VERSION);
             String localVersion = localManifest.getMainAttributes().getValue(Attributes.Name.MANIFEST_VERSION);
 
             //only if the version is same then rewrite local manifest with server manifest.
@@ -176,22 +192,25 @@ public class ClientSetupValidator {
     }
 
     private void downloadLatestSDKZip() {
-        String apiUrl = downloadBioSDKURL;
-        String url = prepareURLByHostName(apiUrl);
+        String url = prepareURLByHostName(downloadBioSDKURL);
         String zipFilePath = "Bio_SDK.zip";
 
-        try (InputStream in = SoftwareUpdateUtil.downloadZipfile(url);
-             FileOutputStream out = new FileOutputStream(zipFilePath)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-            }
+        // Reset status
+        bioSDK_updated = false;
+
+        try {
+            // This will now only proceed if downloadZipfile doesn't throw an exception
+            SoftwareUpdateUtil.downloadZipfile(url, new File(zipFilePath));
 
             backupExistingDirectory(sdkZipExtractionPath);
             unzip(zipFilePath, sdkZipExtractionPath);
-        } catch (IOException | RegBaseCheckedException e) {
-            logger.error("Failed to download or extract the zip file", e);
+
+            bioSDK_updated = true;
+            logger.info("Bio-SDK successfully updated on disk.");
+
+        } catch (Exception e) {
+            logger.error("SDK update aborted due to error: " + e.getMessage());
+            bioSDK_updated = false;
         }
     }
 

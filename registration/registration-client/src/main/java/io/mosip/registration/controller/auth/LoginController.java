@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
+import io.mosip.registration.update.ClientSetupValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -841,6 +842,23 @@ public class LoginController extends BaseController implements Initializable {
 	 * @param loginMode the loginMode
 	 */
 	private void loadNextScreen(UserDTO userDTO, String loginMode) {
+		if (serviceDelegateUtil.isNetworkAvailable()) {
+			javafx.application.Platform.runLater(() -> {
+				try {
+					// Check if we are already logging this or if sync is busy
+					LOGGER.info("Login validated. Initiating Bio-SDK check...");
+					ClientSetupValidator bioValidator = new ClientSetupValidator();
+					bioValidator.validateBioSDK();
+
+					if (bioValidator.isBioSDK_updated()) {
+						generateAlert(RegistrationConstants.ALERT_INFORMATION, "Bio-SDK updated. Application will restart.");
+						System.exit(0);
+					}
+				} catch (Exception e) {
+					LOGGER.error("Background Bio-SDK check failed", e);
+				}
+			});
+		}
 
 		if (!loginList.isEmpty()) {
 
@@ -942,10 +960,17 @@ public class LoginController extends BaseController implements Initializable {
 				} else if (taskService.getValue().contains(RegistrationConstants.SUCCESS)) {
 					if (isInitialSetUp) {
 						// update initial set up flag
+						ClientSetupValidator bioValidator = null;
+						try {
+							bioValidator = new ClientSetupValidator();
+						} catch (RegBaseCheckedException e) {
+							throw new RuntimeException(e);
+						}
+						bioValidator.validateBioSDK();
 						globalParamService.update(RegistrationConstants.INITIAL_SETUP, RegistrationConstants.DISABLE);
 						restartApplication();
 					} else {
-						//As the sync is successful, navigating the user to the next screen						
+						//As the sync is successful, navigating the user to the next screen
 						pane.setVisible(false);
 						loadNextScreen(userDTO, RegistrationConstants.PWORD);
 					}					
