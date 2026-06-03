@@ -1932,6 +1932,7 @@ public class RegistrationConstants {
 	public static final String LOCAL_OR_NONLOCAL_ERROR_MSG="Any one of the (Local or non-Local) countrycode and phone pair is required!.";
 	public static final String AIN_OR_AID_ERROR_MSG="At least one field in the 'Linked Dependant to Principal' section must be filled.";
 	public static final String SAME_NATIONALITY_ERROR_MSG="Primary and Secondary Nationality must not be the same.";
+	public static final String INVALID_EXPIRY_ISSUANCE_DIFF = "INVALID_EXPIRY_ISSUANCE_DIFF";
 
 	public static final String ICONS_HBOX = "iconsHBox";
 	public static final String KEYBOARD_PANE = "keyboardPane";
